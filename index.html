@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hochbeet Konstruktions-Planer</title>
+    <title>Hochbeet Master-Planer PRO</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f1; padding: 20px; color: #2c3e50; }
         .container { max-width: 1150px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
@@ -16,10 +16,13 @@
         button { background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; padding: 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1em; width: 100%; margin-top: 20px; font-weight: bold; transition: 0.2s; }
         button:hover { transform: scale(1.01); filter: brightness(1.05); }
         
-        /* Sprachschalter Styling */
         .lang-switch { text-align: right; margin-bottom: 15px; }
-        .lang-btn { width: 10%; cursor: pointer; border: 1px solid #ccc; background: white; padding: 8px 15px; border-radius: 5px; font-weight: bold; transition: 0.3s; }
+        .lang-btn { cursor: pointer; border: 1px solid #ccc; background: white; padding: 8px 15px; border-radius: 5px; font-weight: bold; transition: 0.3s; }
         .lang-btn.active { background: #27ae60; color: white; border-color: #27ae60; }
+
+        /* 3D Viewer Styling */
+        #three-container { width: 100%; height: 500px; background: #eee; border-radius: 12px; margin-top: 20px; position: relative; overflow: hidden; border: 2px solid #ddd; }
+        #three-label { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 4px; font-size: 0.8em; pointer-events: none; }
 
         #results { margin-top: 30px; padding: 20px; border: 2px solid #27ae60; border-radius: 8px; display:none; background: #fff; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95em; }
@@ -28,18 +31,10 @@
         .cutting-list { background: #fffbe6; padding: 20px; border-left: 5px solid #f1c40f; margin-top: 20px; border-radius: 4px; }
         .project-summary { background: #e8f5e9; padding: 20px; border-left: 5px solid #27ae60; margin-top: 20px; border-radius: 4px; }
         .warning-box { color: #c0392b; font-weight: bold; background: #fdeaea; padding: 15px; border: 2px solid #c0392b; border-radius: 8px; margin-bottom: 15px; display: none; }
-        .disclaimer-box { 
-            margin: 25px 0; 
-            padding: 20px; 
-            background-color: #fff9e6; 
-            border: 2px solid #ffcc00; 
-            border-radius: 10px; 
-            font-size: 0.85em; 
-            line-height: 1.5;
-            color: #5d4e12;
-        }
-
-</style>
+        .disclaimer-box { margin: 25px 0; padding: 20px; background-color: #fff9e6; border: 2px solid #ffcc00; border-radius: 10px; font-size: 0.85em; line-height: 1.5; color: #5d4e12; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
@@ -89,6 +84,7 @@
         </div>
     </div>
 
+
     <div class="disclaimer-box">
         <div style="margin-bottom: 10px;">
             <strong>⚠️ Haftungsausschluss / Disclaimer:</strong><br>
@@ -104,29 +100,36 @@
     <button id="calcBtn" onclick="calculate()">🚀 Materialliste & Zuschnitt generieren</button>
 
     <div id="results">
-        <h2 id="resH">🛒 Einkaufsliste (Baumarkt)</h2>
-        <table>
-            <thead><tr><th id="th1">Kategorie</th><th id="th2">Gegenstand</th><th id="th3">Handelseinheit</th><th id="th4">Bedarf Gesamt</th></tr></thead>
+        <h2 id="resH">🛒 Einkaufsliste</h2>
+        <table id="resTable">
+            <thead><tr><th id="th1">Kategorie</th><th id="th2">Gegenstand</th><th id="th3">Einheit</th><th id="th4">Bedarf</th></tr></thead>
             <tbody id="resBody"></tbody>
         </table>
-
         <div class="cutting-list">
             <div id="cutWarning" class="warning-box"></div>
-            <h2 id="cutH">🪚 Werkstatt-Zuschnittliste</h2>
+            <h2 id="cutH">🪚 Zuschnittliste</h2>
             <div id="cutBody"></div>
         </div>
-
-        <div class="project-summary">
-            <h2 id="sumH">📦 Deine fertigen Beete</h2>
-            <ul id="summaryBody"></ul>
-        </div>
+        <div class="project-summary"><h2 id="sumH">📦 Zusammenfassung</h2><ul id="summaryBody"></ul></div>
     </div>
 </div>
 
 <img src="assets/images/render_01.png" alt="Hochbeet Konstruktion" style="max-width:100%; height:auto; border-radius:8px; margin-bottom:20px;">
 
+
+    <div id="three-container">
+        <div id="three-label">3D Vorschau</div>
+        <div class="toggle-3d" style="position: absolute; top: 10px; right: 10px; z-index: 20; background: white; padding: 8px; border-radius: 5px; border: 1px solid #ccc; font-size: 0.8em;">
+            <input type="checkbox" id="showProtection" checked onchange="calculate()"> 
+            <label for="showProtection" style="cursor:pointer; font-weight:bold;"> Schutz (Folie/Nägel)</label>
+        </div>
+    </div>
+
+    
 <script>
 let currentLang = 'de';
+// Three.js Variablen
+let scene, camera, renderer, controls, bedGroup;
 
 const langData = {
     de: {
@@ -139,47 +142,235 @@ const langData = {
         calcBtn: "🚀 Materialliste & Zuschnitt generieren",
         resH: "🛒 Einkaufsliste (Baumarkt)", th1: "Kategorie", th2: "Gegenstand", th3: "Einheit", th4: "Bedarf",
         cutH: "🪚 Werkstatt-Zuschnittliste", sumH: "📦 Deine fertigen Beete",
-        warnMsg: "⚠️ BREITEN-LIMIT: Das Beet wurde auf {val}mm begrenzt (Tige filetée).",
+        warnMsg: "⚠️ BREITEN-LIMIT: Das Beet wurde auf {val}mm begrenzt.",
         catW: "Holz", catM: "Metall", catP: "Schutz", catF: "Finish",
         itemPlW: "Planken (Wand)", itemPlS: "Planken (Sitzfläche)", itemPf: "Vierkant-Pfosten",
         itemGew: "Gewindestangen M10", itemMS: "Muttern + Scheiben (Sets)", itemScr: "Holzschrauben (Inox)",
-        itemPe: "PE-Schutzrohr", itemNop: "Noppenfolie", itemWuhl: "Wühlmausgitter", itemOil: "Douglasie-Öl",
-        cutL: "Längsplanken", cutQ: "Querplanken", cutSL: "Sitzplanken Längs", cutSQ: "Sitzplanken Quer",
+        itemPe: "PE-Schutzrohr", itemNop: "Noppenfolie", itemWuhl: "Wühlmausgitter", itemOil: "Douglasie-Öl", itemVlies: "Unkrautvlies (Boden) ",
+        cutL: "Längsplanken", cutQ: "Querplanken", cutSL: "Sitzplanken Längs",
         cutPf: "Pfosten auf {h}mm", cutRod: "Gewindestangen M10 auf {val}mm", cutPe: "PE-Schutzrohr auf {val}mm",
         sumRow: "<strong>{n} Beet(e)</strong> à {l}x{b}mm — Höhe: <strong>{h}mm</strong>"
     },
     fr: {
-        title: "📐 Planificateur de Potager PRO (Cazaugitat)",
+        title: "📐 Planificateur de Potager PRO",
         sec1: "1. Bois & Poteaux", sec2: "2. Métal & Fixation", sec3: "3. Protection, Gaine & Huile", sec4: "4. Portée du projet",
         l_plL: "Longueur planche (mm):", l_plB: "Largeur planche (mm):", l_plD: "Épaisseur planche (mm):", l_pfL: "Longueur poteau (mm):", l_pfM: "Dimension poteau (mm):",
         l_gL: "Tige filetée commerce (mm):", l_mutP: "Écrous par boîte (pcs):", l_schP: "Rondelles par boîte (pcs):", l_holzSchP: "Vis à bois par boîte (pcs):",
         l_peL: "Tube PE commerce (mm):", l_nopB: "Largeur nappe bulles (mm):", l_wuhlR: "Grillage anti-taupe (m²):", l_oelL: "Taille pot d'huile (L):", l_oelE: "Rendement (m²/L):",
         l_bL: "Longueur côté long (mm):", l_maxB: "Largeur max souhaitée (mm):", l_n4: "Bacs (4 planches haut):", l_n3: "Bacs (3 planches haut):", l_n2: "Bacs (2 planches haut):", l_n1: "Bacs (1 planche haut):",
         calcBtn: "🚀 Générer liste matériel & coupes",
-        resH: "🛒 Liste de courses (Magasin)", th1: "Catégorie", th2: "Article", th3: "Unité", th4: "Besoin",
-        cutH: "🪚 Liste de découpe (Atelier)", sumH: "📦 Vos bacs terminés",
-        warnMsg: "⚠️ LIMITE LARGEUR: Bac limité à {val}mm (Tige trop courte).",
+        resH: "🛒 Liste de courses", th1: "Catégorie", th2: "Article", th3: "Unité", th4: "Besoin",
+        cutH: "🪚 Liste de découpe", sumH: "📦 Vos bacs terminés",
+        warnMsg: "⚠️ LIMITE LARGEUR: Bac limité à {val}mm.",
         catW: "Bois", catM: "Métal", catP: "Protection", catF: "Finition",
         itemPlW: "Planches (Mur)", itemPlS: "Planches (Siège)", itemPf: "Poteaux carrés",
-        itemGew: "Tiges filetées M10", itemMS: "Écrous + Rondelles (Sets)", itemScr: "Vis à bois (Inox)",
-        itemPe: "Gaine PE (Tube)", itemNop: "Nappe à bulles", itemWuhl: "Grillage anti-rongeur", itemOil: "Huile pour Douglas",
-        cutL: "Planches longitudinales", cutQ: "Planches transversales", cutSL: "Siège longitudinal", cutSQ: "Siège transversal",
+        itemGew: "Tiges filetées M10", itemMS: "Écrous + Rondelles", itemScr: "Vis à bois (Inox)",
+        itemPe: "Gaine PE", itemNop: "Nappe à bulles", itemWuhl: "Grillage anti-rongeur", itemOil: "Huile Douglas",itemVlies: "Géotextile anti-mauvaises herbes",
+        cutL: "Planches longitudinales", cutQ: "Planches transversales", cutSL: "Siège longitudinal",
         cutPf: "Poteaux à {h}mm", cutRod: "Tiges filetées M10 à {val}mm", cutPe: "Gaine PE à {val}mm",
         sumRow: "<strong>{n} Bac(s)</strong> à {l}x{b}mm — Hauteur: <strong>{h}mm</strong>"
     }
 };
 
+// INITIALISIERUNG 3D SCENE
+function init3D() {
+    const container = document.getElementById('three-container');
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf0f2f1);
+    camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 20000);
+    camera.position.set(2500, 2000, 2500);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    directionalLight.position.set(1000, 1500, 1000);
+    scene.add(directionalLight);
+
+    animate();
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+}
+
+
+
+function update3DModel(bL, bB, plB, plD, pfM, numPlanken) {
+    if (bedGroup) scene.remove(bedGroup);
+    bedGroup = new THREE.Group();
+
+    const woodMat = new THREE.MeshLambertMaterial({ color: 0xcd853f }); 
+    const postMat = new THREE.MeshLambertMaterial({ color: 0x8b4513 }); 
+    const steelMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.8 });
+    const screwMat = new THREE.MeshLambertMaterial({ color: 0x111111 }); 
+    const foilMat = new THREE.MeshLambertMaterial({ color: 0x333333, transparent: true, opacity: 0.6 }); // Noppenfolie Anthrazit
+
+    const showProt = document.getElementById('showProtection').checked;
+    let h_total = numPlanken * plB;
+    let mPf = bL >= 2100 ? 2 : (bL < 1200 ? 0 : 1);
+    const fuge = 2; 
+
+    const screwGeo = new THREE.CylinderGeometry(4, 4, 5, 8);
+    screwGeo.rotateZ(Math.PI / 2); 
+
+    // 1. PFÖSTEN & GEWINDESTANGEN
+    let pfXPositions = [-bL/2 + pfM/2, bL/2 - pfM/2]; 
+    let mittelX = [];
+    if (mPf === 1) mittelX.push(0);
+    if (mPf === 2) { mittelX.push(-bL/4); mittelX.push(bL/4); }
+
+    [...pfXPositions, ...mittelX].forEach(x => {
+        const pV = new THREE.Mesh(new THREE.BoxGeometry(pfM, h_total, pfM), postMat);
+        pV.position.set(x, h_total/2, -bB/2 - plD - pfM/2);
+        bedGroup.add(pV);
+        const pH = new THREE.Mesh(new THREE.BoxGeometry(pfM, h_total, pfM), postMat);
+        pH.position.set(x, h_total/2, bB/2 + plD + pfM/2);
+        bedGroup.add(pH);
+
+        if (mittelX.includes(x)) {
+            let rodLen = bB + (2 * plD) + (2 * pfM) + 40;
+            const rod = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, rodLen, 8), steelMat);
+            rod.rotation.x = Math.PI / 2;
+            rod.position.set(x, 300, 0); 
+            bedGroup.add(rod);
+        }
+    });
+
+    // 2. LÄNGS-PLANKEN + INNEN-SCHRAUBEN (2 STÜCK PRO ECKE)
+    const plLGeo = new THREE.BoxGeometry(bL, plB - fuge, plD);
+    for(let i=0; i<numPlanken; i++) {
+        const y_center = i * plB + plB/2;
+        const y_bottom = i * plB;
+
+        [-1, 1].forEach(side => {
+            const zPos = side * (bB/2 + plD/2);
+            const lP = new THREE.Mesh(plLGeo, woodMat);
+            lP.position.set(0, y_center, zPos);
+            bedGroup.add(lP);
+
+            pfXPositions.forEach(x => {
+                const screwZ = side * (bB/2 + 2); 
+                const h1 = (20 + (plB/2)) / 2;
+                const h2 = ((plB/2) + (plB - 20)) / 2;
+                [y_bottom + h1, y_bottom + h2].forEach(yPos => {
+                    const scr = new THREE.Mesh(screwGeo, screwMat);
+                    scr.position.set(x, yPos, screwZ);
+                    bedGroup.add(scr);
+                });
+            });
+        });
+    }
+
+    // 3. STIRN-PLANKEN + FRONT-SCHRAUBEN (3ER MUSTER PRO SEITE)
+    const gesamtBreiteAussen = bB + (2 * plD) + (2 * pfM);
+    const plQGeo = new THREE.BoxGeometry(plD, plB - fuge, gesamtBreiteAussen); 
+    
+    for(let i=0; i<numPlanken; i++) {
+        const y_center = i * plB + plB/2;
+        const y_bottom = i * plB;
+        const y_top = (i + 1) * plB - fuge;
+
+        // LINKE STIRNSEITE
+        const qL = new THREE.Mesh(plQGeo, woodMat);
+        const xL = -bL/2 - plD/2;
+        qL.position.set(xL, y_center, 0);
+        bedGroup.add(qL);
+
+        // RECHTE STIRNSEITE
+        const qR = new THREE.Mesh(plQGeo, woodMat);
+        const xR = bL/2 + plD/2;
+        qR.position.set(xR, y_center, 0);
+        bedGroup.add(qR);
+
+        // SCHRAUBEN FÜR BEIDE STIRNSEITEN
+        [ {x: xL - (plD/2 + 2), dir: 1}, {x: xR + (plD/2 + 2), dir: -1} ].forEach(side => {
+            // Die äußeren 4 Schrauben (2 oben, 2 unten)
+            [gesamtBreiteAussen/2 - 20, -gesamtBreiteAussen/2 + 20].forEach(z => {
+                const s1 = new THREE.Mesh(screwGeo, screwMat);
+                s1.position.set(side.x, y_bottom + 20, z);
+                bedGroup.add(s1);
+                const s2 = new THREE.Mesh(screwGeo, screwMat);
+                s2.position.set(side.x, y_top - 20, z);
+                bedGroup.add(s2);
+            });
+            // Die 2 mittleren versetzten Schrauben
+            [gesamtBreiteAussen/2 - 40, -gesamtBreiteAussen/2 + 40].forEach(z => {
+                const s3 = new THREE.Mesh(screwGeo, screwMat);
+                s3.position.set(side.x, y_center, z);
+                bedGroup.add(s3);
+            });
+        });
+    }
+
+    // 4. SITZBANK (6mm Stirn / 22mm Front Überstand)
+    const seatWidth = plB; 
+    const seatThickness = plD; 
+    const seatLen = bL + (2 * plD) + 12; 
+    const offsetZ = (bB / 2) + plD + pfM + 22 - (seatWidth / 2);
+
+    const sV = new THREE.Mesh(new THREE.BoxGeometry(seatLen, seatThickness, seatWidth), woodMat);
+    sV.position.set(0, h_total + (seatThickness/2), -offsetZ); 
+    bedGroup.add(sV);
+    const sH = new THREE.Mesh(new THREE.BoxGeometry(seatLen, seatThickness, seatWidth), woodMat);
+    sH.position.set(0, h_total + (seatThickness/2), offsetZ);
+    bedGroup.add(sH);
+
+
+    // 5. NOPPENFOLIE & NÄGEL (NEU)
+    if(showProt) {
+        // Die 4 Innenseiten der Folie
+        const foilThick = 2;
+        const fL = new THREE.Mesh(new THREE.BoxGeometry(bL - 4, h_total, foilThick), foilMat);
+        fL.position.set(0, h_total/2, -bB/2 + 1); bedGroup.add(fL);
+        const fR = new THREE.Mesh(new THREE.BoxGeometry(bL - 4, h_total, foilThick), foilMat);
+        fR.position.set(0, h_total/2, bB/2 - 1); bedGroup.add(fR);
+        const fF = new THREE.Mesh(new THREE.BoxGeometry(foilThick, h_total, bB - 4), foilMat);
+        fF.position.set(-bL/2 + 1, h_total/2, 0); bedGroup.add(fF);
+        const fA = new THREE.Mesh(new THREE.BoxGeometry(foilThick, h_total, bB - 4), foilMat);
+        fA.position.set(bL/2 - 1, h_total/2, 0); bedGroup.add(fA);
+
+        // Noppennägel (schwarze Köpfe, oben umlaufend)
+        const nailGeo = new THREE.CylinderGeometry(6, 6, 4, 8);
+        nailGeo.rotateX(Math.PI/2);
+        const nailY = h_total - 25; // 25mm unter Oberkante
+
+        for(let x = -bL/2 + 150; x < bL/2; x += 400) { // Alle 40cm ein Nagel
+            [-bB/2+3, bB/2-3].forEach(z => {
+                const n = new THREE.Mesh(nailGeo, screwMat);
+                n.position.set(x, h_total - 25, z);
+                bedGroup.add(n);
+            });
+        }
+        
+        // NÄGEL AN DEN STIRNSEITEN (Vorne/Hinten)
+        for(let z = -bB/2 + 200; z < bB/2; z += 400) {
+            [-bL/2 + 3, bL/2 - 3].forEach(x => {
+                const n = new THREE.Mesh(nailGeo, screwMat);
+                n.rotation.y = Math.PI / 2; // Drehen für die Querseite
+                n.position.set(x, nailY, z);
+                bedGroup.add(n);
+            });
+        }
+
+    }
+
+    scene.add(bedGroup);
+}
+
+
+
+
 function setLang(lang) {
     currentLang = lang;
     document.getElementById('btnDe').classList.toggle('active', lang === 'de');
     document.getElementById('btnFr').classList.toggle('active', lang === 'fr');
-    
-    document.getElementById('titleText').innerText = langData[lang].title;
-    document.getElementById('calcBtn').innerText = langData[lang].calcBtn;
-    document.getElementById('resH').innerText = langData[lang].resH;
-    document.getElementById('cutH').innerText = langData[lang].cutH;
-    document.getElementById('sumH').innerText = langData[lang].sumH;
-    
     for (let key in langData[lang]) {
         let el = document.getElementById(key);
         if (el) el.innerText = langData[lang][key];
@@ -196,6 +387,8 @@ function calculate() {
     const pfM = parseFloat(document.getElementById('pfM').value);
     const gL_handel = parseFloat(document.getElementById('gL').value);
     const peL_handel = parseFloat(document.getElementById('peL').value);
+    const bL = parseFloat(document.getElementById('bL').value);
+    const maxB_user = parseFloat(document.getElementById('maxB').value);
     const mutP = parseInt(document.getElementById('mutP').value);
     const schP = parseInt(document.getElementById('schP').value);
     const holzSchP = parseInt(document.getElementById('holzSchP').value);
@@ -203,18 +396,11 @@ function calculate() {
     const wuhlR = parseFloat(document.getElementById('wuhlR').value);
     const oelL = parseFloat(document.getElementById('oelL').value);
     const oelE = parseFloat(document.getElementById('oelE').value);
-    const bL = parseFloat(document.getElementById('bL').value);
-    const maxB_user = parseFloat(document.getElementById('maxB').value);
 
-    // BREITEN-LOGIK
     const bB_technisch_max = gL_handel - (2 * pfM) - (2 * plD) - 40;
     let bB_final = plL - bL; 
     let limitWarning = false;
-
-    if (bB_final > bB_technisch_max) {
-        bB_final = bB_technisch_max;
-        limitWarning = true;
-    }
+    if (bB_final > bB_technisch_max) { bB_final = bB_technisch_max; limitWarning = true; }
     if (bB_final > maxB_user) bB_final = maxB_user;
 
     const types = [
@@ -224,89 +410,88 @@ function calculate() {
         {h: 1, n: parseInt(document.getElementById('n1').value) || 0}
     ];
 
-    let tPlWand = 0, tPlSitz = 0, tPfM = 0, tGew = 0, tNop = 0, tWuhl = 0, tOelA = 0, tPe = 0, tScr = 0;
-    let zusPf = {};
-    let cL = 0, cQ = 0, totalBacs = 0;
-    let summaryHtml = "";
+    let tPlWand = 0, tPlSitz = 0, tPfM = 0, tGew = 0, tNop = 0, tWuhl = 0, tVlies = 0, tOelA = 0, tPe = 0, tScr = 0;
+    let zusPf = {}, totalBacs = 0, summaryHtml = "";
+    let firstH = 0;
 
     types.forEach(t => {
         if (t.n > 0) {
+            if(firstH === 0) firstH = t.h;
             totalBacs += t.n;
             let h_beet = t.h * plB;
-            // let mPf = bL >= 3000 ? 2 : 1;
-            // NEUE LOGIK: Mittelpfosten basierend auf Seitenlänge (bL)
-            let mPf = 1; // Standard: 1 Mittelpfosten
-            if (bL >= 2100) {
-                mPf = 2; // Ab 2,1m Länge: 2 Mittelpfosten
-            } else if (bL < 1200) {
-                mPf = 0; // Unter 1,2m Länge: 0 Mittelpfosten
-            }
+            let mPf = bL >= 2100 ? 2 : (bL < 1200 ? 0 : 1);
 
             tPlWand += (2 * t.h * t.n);
-            cL += (2 * t.h * t.n); cQ += (2 * t.h * t.n);
-            tScr += (2 * t.h * 4 * t.n) + (2 * t.h * 6 * t.n) + (8 * t.n);
-
-            let deckL = bL + 60; let deckQ = bB_final + 60;
-            tPlSitz += ((deckL + deckQ) <= plL) ? (2 * t.n) : (4 * t.n);
+            // tScr += (2 * t.h * 10 * t.n) + (8 * t.n);
+            // 1. Stirnschrauben: 4 Ecken * Plankenanzahl * 3 Schrauben
+            let schraubenStirn = 4 * t.h * 3 * t.n;        
+            // 2. Längsschrauben (Innen): 4 Ecken * Plankenanzahl * 2 Schrauben
+            let schraubenLaengs = 4 * t.h * 2 * t.n;
+            // 3. Sitzbank: 8 Schrauben pro Beet
+            let schraubenSitz = 8 * t.n;
+            tScr += (schraubenStirn + schraubenLaengs + schraubenSitz);
+            
+            tPlSitz += (2 * t.n); // Nur Längs-Sitzbalken laut Skizze
 
             let pfAnz = (4 + 2 * mPf) * t.n;
             tPfM += (pfAnz * h_beet) / 1000;
             zusPf[h_beet] = (zusPf[h_beet] || 0) + pfAnz;
             tGew += (mPf * t.n);
-            // tPe += (mPf * t.n * (bB_final - 20)) / 1000;
             tPe += (mPf * t.n * (bB_final - (2 * plD))) / 1000;
 
             let umfang = 2 * (bL + bB_final);
-            tWuhl += (bL * bB_final * t.n) / 1000000;
+
+            let bodenFlaecheM2 = (bL * bB_final) / 1000000; // m² pro Beet
+            let bedarfInklPuffer = bodenFlaecheM2 * 1.15; // 15% extra für das Hochknicken an den Rändern
+            tWuhl += bodenFlaecheM2 * t.n; // Wühlmausschutz (meist flach)
+            tVlies += bedarfInklPuffer * t.n; // Unkrautvlies (muss an den Seiten hochlaufen)
+
             tNop += (h_beet <= nopB / 2) ? (umfang * t.n / 2 / 1000) : (umfang * t.n / 1000);
             tOelA += ((umfang * h_beet / 1000000) * 2 + (umfang * plB / 1000000) * 3) * t.n;
 
-
-            // summaryHtml += `<li>${ui.sumRow.replace('{n}', t.n).replace('{l}', bL).replace('{b}', bB_final.toFixed(0)).replace('{h}', h_beet)}</li>`;
-            // Anzeige-Text für Mittelpfosten (zweisprachig)
-
-            let pfostenInfo = currentLang === 'de' 
-                ? `${mPf} Mittelpfosten pro Längsseite` 
-                : `${mPf} poteaux intermédiaires par côté long`;
-            summaryHtml += `<li>${ui.sumRow.replace('{n}', t.n).replace('{l}', bL).replace('{b}', bB_final.toFixed(0)).replace('{h}', h_beet)} — <small>(${pfostenInfo})</small></li>`;
+            let pfInfo = currentLang === 'de' ? `${mPf} Mittelpfosten` : `${mPf} poteaux interm.`;
+            summaryHtml += `<li>${ui.sumRow.replace('{n}', t.n).replace('{l}', bL).replace('{b}', bB_final.toFixed(0)).replace('{h}', h_beet)} — <small>(${pfInfo})</small></li>`;
         }
     });
 
+    // 3D Update
+    if(firstH > 0) update3DModel(bL, bB_final, plB, plD, pfM, firstH);
+
     document.getElementById('results').style.display = 'block';
     const warnBox = document.getElementById('cutWarning');
-    if (limitWarning) {
-        warnBox.style.display = 'block';
-        warnBox.innerText = ui.warnMsg.replace('{val}', bB_final.toFixed(0));
-    } else { warnBox.style.display = 'none'; }
+    if (limitWarning) { warnBox.style.display = 'block'; warnBox.innerText = ui.warnMsg.replace('{val}', bB_final.toFixed(0)); } else { warnBox.style.display = 'none'; }
 
     document.getElementById('resBody').innerHTML = `
         <tr><td>${ui.catW}</td><td>${ui.itemPlW}</td><td>${plL}mm</td><td><b>${tPlWand}</b></td></tr>
         <tr><td>${ui.catW}</td><td>${ui.itemPlS}</td><td>${plL}mm</td><td><b>${tPlSitz}</b></td></tr>
         <tr><td>${ui.catW}</td><td>${ui.itemPf}</td><td>${pfL}mm</td><td><b>${Math.ceil((tPfM*1000)/pfL)}</b></td></tr>
         <tr><td>${ui.catM}</td><td>${ui.itemGew}</td><td>${gL_handel}mm</td><td><b>${tGew}</b></td></tr>
-        <tr><td>${ui.catM}</td><td>${ui.itemMS}</td><td>Sets</td><td><b>${tGew*2} (${Math.ceil((tGew*2)/mutP)} pack)</b></td></tr>
-        <tr><td>${ui.catM}</td><td>${ui.itemScr}</td><td>${holzSchP}</td><td><b>${Math.ceil(tScr/holzSchP)} pack</b></td></tr>
+        <tr><td>${ui.catM}</td><td>${ui.itemMS}</td><td>Sets</td><td><b>${tGew*2} (${Math.ceil((tGew*2)/mutP)} pk)</b></td></tr>
+        <tr><td>${ui.catM}</td><td>${ui.itemScr}</td><td>pk</td><td><b>${Math.ceil(tScr/holzSchP)}</b></td></tr>
         <tr><td>${ui.catP}</td><td>${ui.itemPe}</td><td>${peL_handel}mm</td><td><b>${Math.ceil((tPe*1000)/peL_handel)}</b></td></tr>
-        <tr><td>${ui.catP}</td><td>${ui.itemNop}</td><td>m</td><td><b>${Math.ceil(tNop)} m</b></td></tr>
-        <tr><td>${ui.catP}</td><td>${ui.itemWuhl}</td><td>${wuhlR}m²</td><td><b>${Math.ceil(tWuhl/wuhlR)} Roll.</b></td></tr>
-        <tr><td>${ui.catF}</td><td>${ui.itemOil}</td><td>${oelL}L</td><td><b>${Math.ceil((tOelA/oelE)/oelL)} Pot(s)</b></td></tr>
+        <tr><td>${ui.catP}</td><td>${ui.itemNop}</td><td>m</td><td><b>${Math.ceil(tNop)}</b></td></tr>
+
+        <tr><td>${ui.catP}</td><td>${ui.itemWuhl}</td><td>m²</td><td><b>${tWuhl.toFixed(1)}</b></td></tr>
+        <tr><td>${ui.catP}</td><td>${ui.itemVlies}</td><td>m²</td><td><b>${tVlies.toFixed(1)}</b></td></tr>
+
+        <tr><td>${ui.catF}</td><td>${ui.itemOil}</td><td>${oelL}L</td><td><b>${Math.ceil((tOelA/oelE)/oelL)}</b></td></tr>
     `;
 
-    // keine Querplanken bei 1-Planken-Beeten, daher Anpassung der Schnittliste
     let pfText = Object.keys(zusPf).map(h => `<li>${zusPf[h]}x ${ui.cutPf.replace('{h}', h)}</li>`).join('');
     document.getElementById('cutBody').innerHTML = `
         <ul>
-            <li>${cL}x ${ui.cutL}: <b>${bL}mm</b></li>
-            <li>${cQ}x ${ui.cutQ}: <b>${bB_final.toFixed(0)}mm</b></li>
+            <li>${tPlWand/2}x ${ui.cutL}: <b>${bL}mm</b></li>
+            <li>${tPlWand/2}x ${ui.cutQ}: <b>${bB_final.toFixed(0)}mm</b></li>
             ${pfText}
-            <li>${totalBacs * 2}x ${ui.cutSL}: <b>${(bL + (2 * plD) + 12).toFixed(0)}mm</b></li>
+            <li>${tPlSitz}x ${ui.cutSL}: <b>${(bL + (2 * plD) + 12).toFixed(0)}mm</b></li>
             <li>${tGew}x ${ui.cutRod.replace('{val}', (bB_final + (2 * pfM) + (2 * plD) + 40).toFixed(0))}</li>
             <li>${tGew}x ${ui.cutPe.replace('{val}', (bB_final - (2 * plD)).toFixed(0))}</li>
         </ul>
     `;
-    
     document.getElementById('summaryBody').innerHTML = summaryHtml;
 }
+
+window.onload = init3D;
 </script>
 </body>
 </html>
