@@ -492,22 +492,33 @@ function calculate() {
 }
 
 window.onload = init3D;
-</script>
+
 
     <script>
     function injectFooter() {
-        const currentDomain = window.location.hostname.replace('www.', '');
+        // Holt den Hostnamen (z.B. hochbeet.chaudeborde.fr)
+        const hostParts = window.location.hostname.split('.');
+        let mainDomain = "";
+    
+        // Logik: Nimm die letzten zwei Teile von rechts (TLD und Domainname)
+        if (hostParts.length >= 2) {
+            const tld = hostParts.pop(); // Holt 'fr'
+            const name = hostParts.pop(); // Holt 'chaudeborde' oder '33790'
+            mainDomain = name + "." + tld;
+        } else {
+            // Fallback für lokale Tests
+            mainDomain = "chaudeborde.fr";
+        }
+    
         const currentYear = new Date().getFullYear();
-        
         const footer = document.createElement('footer');
-        footer.className = 'dynamic-footer';
         
-        // Styling für den Hochbeet-Planer (Grünerer Look passend zum Design)
+        // Styling
         Object.assign(footer.style, {
             position: 'fixed',
             bottom: '10px',
             right: '10px',
-            backgroundColor: 'rgba(39, 174, 96, 0.9)', // Sattes Grün passend zum Button
+            backgroundColor: 'rgba(39, 174, 96, 0.9)',
             color: '#ffffff',
             padding: '10px 15px',
             borderRadius: '8px',
@@ -520,25 +531,26 @@ window.onload = init3D;
             backdropFilter: 'blur(5px)'
         });
         
+        // HTML Inhalt mit den dynamischen Links
         footer.innerHTML = `
             <div style="margin-bottom: 5px;">&copy; 2026–${currentYear} All rights reserved.</div>
             <div>
-                <a href="https://legal.${currentDomain}" target="_legal" style="color: #ffffff; text-decoration: underline; font-weight: bold;">Mentions Légales & Impressum</a>
-                <a href="https://legal.${currentDomain}#privacy" target="_legal" style="color: #ffffff; text-decoration: underline; font-weight: bold; margin-left: 15px;">Politique de confidentialité</a>
+                <a href="https://legal.${mainDomain}" target="_legal" style="color: #ffffff; text-decoration: underline; font-weight: bold;">Mentions Légales & Impressum</a>
+                <a href="https://legal.${mainDomain}#privacy" target="_legal" style="color: #ffffff; text-decoration: underline; font-weight: bold; margin-left: 15px;">Politique de confidentialité</a>
             </div>
         `;
     
-        // Barrierefreiheit
+        // Accessibility
         footer.setAttribute('role', 'contentinfo'); 
         footer.setAttribute('aria-label', 'Informations légales et confidentialité');    
     
         document.body.appendChild(footer);
     }
     
-    // Den Footer sofort beim Laden ausführen
+    // Sofort ausführen
     injectFooter();
     </script>
-
+    
     
 </body>
 </html>
